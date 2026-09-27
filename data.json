@@ -1,0 +1,16 @@
+{
+  "capteur": "DHT11",
+  "localisation": "Salle serveur",
+  "mesures": [
+    { "timestamp": "2025-05-20T08:00:00", "temperature": 36, "humidity": 18 },
+    { "timestamp": "2025-05-20T08:05:00", "temperature": 37, "humidity": 17 },
+    { "timestamp": "2025-05-20T08:10:00", "temperature": 38, "humidity": 16 },
+    { "timestamp": "2025-05-20T08:15:00", "temperature": 39, "humidity": 17 },
+    { "timestamp": "2025-05-20T08:20:00", "temperature": 37, "humidity": 15 },
+    { "timestamp": "2025-05-20T08:25:00", "temperature": 36, "humidity": 14 },
+    { "timestamp": "2025-05-20T08:30:00", "temperature": 38, "humidity": 16 },
+    { "timestamp": "2025-05-20T08:35:00", "temperature": 40, "humidity": 13 },
+    { "timestamp": "2025-05-20T08:40:00", "temperature": 41, "humidity": 14 },
+    { "timestamp": "2025-05-20T08:45:00", "temperature": 37, "humidity": 15 }
+  ]
+}
