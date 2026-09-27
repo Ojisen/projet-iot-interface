@@ -1,0 +1,253 @@
+/* ============================================================
+   CLIMATE MONITOR — style.css
+   Auteur : Projet IoT — Firebase + Chart.js
+   Description : Mise en forme complète du tableau de bord
+   ============================================================ */
+
+
+/* ============================================================
+   1. VARIABLES CSS (palette de couleurs et espacements)
+   Modifier ici pour changer le thème de toute l'interface.
+   ============================================================ */
+:root {
+  /* Couleurs principales */
+  --color-bg:       #f0f4f8;   /* fond de page gris clair        */
+  --color-surface:  #ffffff;   /* fond des cartes blanches        */
+  --color-primary:  #1e3a5f;   /* bleu marine — titres / header   */
+  --color-accent:   #2563eb;   /* bleu vif — accents              */
+  --color-temp:     #e24b4a;   /* rouge — température             */
+  --color-hum:      #378add;   /* bleu — humidité                 */
+  --color-heat:     #ef9f27;   /* orange — indice de chaleur      */
+  --color-text:     #1f2937;   /* texte principal                 */
+  --color-muted:    #6b7280;   /* texte secondaire / labels       */
+  --color-border:   #e5e7eb;   /* bordures légères                */
+
+  /* Effets visuels */
+  --radius:  10px;
+  --shadow:  0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+
+/* ============================================================
+   2. RESET & BASE
+   Supprime les styles par défaut du navigateur.
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box; /* le padding est inclus dans la largeur */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   3. EN-TÊTE (HEADER)
+   Barre de navigation en haut de la page.
+   ============================================================ */
+.header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.header-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* titre à gauche, status à droite */
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Barre de statut : point vert + texte */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+/* Point coloré clignotant */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #2ecc71; /* vert = connecté */
+  animation: pulse 2s infinite;
+}
+
+/* Animation clignotement */
+@keyframes pulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.3; }
+}
+
+
+/* ============================================================
+   4. CONTENEUR PRINCIPAL
+   Limite la largeur et centre le contenu.
+   ============================================================ */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* espace vertical entre les sections */
+}
+
+
+/* ============================================================
+   5. GRILLE DES MÉTRIQUES
+   4 cartes côte à côte avec CSS Grid.
+   ============================================================ */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)); /* 4 colonnes égales */
+  gap: 1rem;
+}
+
+
+/* ============================================================
+   6. CARTES (card)
+   Style partagé par toutes les cartes blanches.
+   ============================================================ */
+.card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  transition: box-shadow 0.2s ease; /* effet hover doux */
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Carte métrique : layout vertical */
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Label en petites majuscules grises */
+.metric-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Grande valeur numérique */
+.metric-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+/* Couleurs spécifiques selon le type */
+.metric-value.temp { color: var(--color-temp); }
+.metric-value.hum  { color: var(--color-hum);  }
+
+/* Unité sous la valeur */
+.metric-unit {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+/* Indicateur de tendance (▲ / ▼) */
+.metric-trend {
+  font-size: 0.72rem;
+  margin-top: 2px;
+}
+
+.trend-up   { color: #e74c3c; } /* hausse = rouge  */
+.trend-down { color: #3498db; } /* baisse = bleu   */
+.trend-flat { color: var(--color-muted); }
+
+
+/* ============================================================
+   7. CARTES DE GRAPHIQUES
+   ============================================================ */
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.chart-header h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+/* Légende du graphique (points colorés + libellé) */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.temp-dot { background-color: var(--color-temp); }
+.hum-dot  { background-color: var(--color-hum);  }
+
+/* Canvas Chart.js — pleine largeur */
+canvas {
+  width: 100% !important;
+  height: 240px !important;
+}
+
+
+/* ============================================================
+   8. RESPONSIVE — ADAPTATION MOBILE
+   En dessous de 700px, les 4 colonnes passent à 2.
+   ============================================================ */
+@media (max-width: 700px) {
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+
+  .metric-value {
+    font-size: 1.8rem;
+  }
+}

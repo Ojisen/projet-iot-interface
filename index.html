@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Climate Monitor — DHT11</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+  <!-- Lien vers le fichier CSS externe (optionnel si les deux fichiers sont au même endroit) -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- CSS embarqué — garantit le style même si style.css est introuvable -->
+  <style>
+    /* ── Variables ── */
+    :root {
+      --color-bg:      #f0f4f8;
+      --color-surface: #ffffff;
+      --color-primary: #1e3a5f;
+      --color-accent:  #2563eb;
+      --color-temp:    #e24b4a;
+      --color-hum:     #378add;
+      --color-text:    #1f2937;
+      --color-muted:   #6b7280;
+      --color-border:  #e5e7eb;
+      --radius: 10px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── Header ── */
+    .header {
+      background-color: var(--color-primary);
+      color: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .header-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.05em; }
+    .header-sub { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+
+    /* ── Status bar ── */
+    .status-bar { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; opacity: 0.85; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background-color: #6b7280;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ── Metrics grid — 3 colonnes ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background-color: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+
+    .metric-card { display: flex; flex-direction: column; gap: 4px; }
+
+    .metric-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    .metric-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--color-text);
+    }
+    .metric-value.temp  { color: var(--color-temp);   }
+    .metric-value.hum   { color: var(--color-hum);    }
+    .metric-value.count { color: var(--color-accent); }
+
+    .metric-unit  { font-size: 0.8rem; color: var(--color-muted); }
+    .metric-trend { font-size: 0.72rem; margin-top: 2px; }
+    .trend-up   { color: #e74c3c; }
+    .trend-down { color: #3498db; }
+    .trend-flat { color: var(--color-muted); }
+
+    /* ── Chart card ── */
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .chart-header h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-muted);
+    }
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.75rem;
+      color: var(--color-muted);
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .temp-dot { background-color: var(--color-temp); }
+    .hum-dot  { background-color: var(--color-hum);  }
+
+    canvas { width: 100% !important; height: 240px !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .header-content { flex-direction: column; gap: 6px; align-items: flex-start; }
+      .container { padding: 1rem; }
+      .metric-value { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── En-tête ── -->
+  <header class="header">
+    <div class="header-content">
+      <div>
+        <h1>Interface d'affichage en temps réel</h1>
+        <p class="header-sub">Données du capteur DHT11</p>
+      </div>
+      <div class="status-bar">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Connexion en cours…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Contenu ── -->
+  <main class="container">
+
+    <!-- Métriques -->
+    <section class="metrics">
+
+      <div class="card metric-card">
+        <span class="metric-label">Température</span>
+        <span class="metric-value temp" id="cur-temp">--</span>
+        <span class="metric-unit">°C</span>
+        <span class="metric-trend" id="trend-temp"></span>
+      </div>
+
+      <div class="card metric-card">
+        <span class="metric-label">Humidité</span>
+        <span class="metric-value hum" id="cur-hum">--</span>
+        <span class="metric-unit">%</span>
+        <span class="metric-trend" id="trend-hum"></span>
+      </div>
+
+      <div class="card metric-card">
+        <span class="metric-label">Mesures reçues</span>
+        <span class="metric-value count" id="count-readings">0</span>
+        <span class="metric-unit">points collectés</span>
+      </div>
+
+    </section>
+
+    <!-- Graphique -->
+    <div class="card">
+      <div class="chart-header">
+        <h2>Évolution dans le temps</h2>
+        <div class="legend">
+          <span><span class="legend-dot temp-dot"></span>Température (°C)</span>
+          <span><span class="legend-dot hum-dot"></span>Humidité (%)</span>
+        </div>
+      </div>
+      <canvas id="myChart"></canvas>
+    </div>
+
+  </main>
+
+
+  <!-- ============================================================
+       FIREBASE + LOGIQUE
+       ÉTAPE 1 — remplacez les valeurs YOUR_* par votre config.
+       ÉTAPE 2 — vérifiez le chemin du nœud Firebase (sensorRef).
+  ============================================================ -->
+  <script type="module">
+    import { initializeApp }             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    /* ── 1. Votre configuration Firebase ── */
+    const firebaseConfig = {
+      apiKey:      "AIzaSyA67ZfHVEjKRR5wTQOT2d2pOHlG5PW7ZRQ",
+      databaseURL: "https://projet-iot-a9c26-default-rtdb.firebaseio.com/",
+      projectId:   "projet-iot-a9c26"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    /* ── 2. Références DOM ── */
+    const elTemp   = document.getElementById('cur-temp');
+    const elHum    = document.getElementById('cur-hum');
+    const elCount  = document.getElementById('count-readings');
+    const elStatus = document.getElementById('status-text');
+    const elDot    = document.getElementById('status-dot');
+    const elTrendT = document.getElementById('trend-temp');
+    const elTrendH = document.getElementById('trend-hum');
+
+    /* ── 3. Graphique ── */
+    const labels = [], tempData = [], humData = [];
+
+    const chart = new Chart(document.getElementById('myChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Température (°C)',
+            data: tempData,
+            borderColor: '#e24b4a',
+            backgroundColor: 'rgba(226,75,74,0.06)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Humidité (%)',
+            data: humData,
+            borderColor: '#378add',
+            backgroundColor: 'rgba(55,138,221,0.06)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            title: { display: true, text: 'Heure de réception', color: '#6b7280', font: { size: 11 } },
+            ticks: { color: '#6b7280', maxTicksLimit: 8 },
+            grid:  { color: '#e5e7eb' }
+          },
+          y: {
+            title: { display: true, text: 'Valeurs Mesurées', color: '#6b7280', font: { size: 11 } },
+            min: 0,
+            ticks: { color: '#6b7280' },
+            grid:  { color: '#e5e7eb' }
+          }
+        }
+      }
+    });
+
+    /* ── 4. Tendances ── */
+    function setTrend(el, prev, curr) {
+      if (prev === null) { el.textContent = ''; return; }
+      if (curr > prev)      { el.textContent = '▲ en hausse'; el.className = 'metric-trend trend-up';   }
+      else if (curr < prev) { el.textContent = '▼ en baisse'; el.className = 'metric-trend trend-down'; }
+      else                  { el.textContent = '— stable';    el.className = 'metric-trend trend-flat'; }
+    }
+
+    let prevTemp = null, prevHum = null, count = 0;
+
+    /* ── 5. Écoute Firebase ──
+       ÉTAPE 2 : adaptez le chemin à votre base de données */
+    const sensorRef = ref(db, '/');
+
+    onValue(sensorRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const temp = parseFloat(data.temperature);
+      const hum  = parseFloat(data.humidity);
+
+      /* Valeurs — uniquement le nombre, l'unité est déjà dans le HTML */
+      elTemp.textContent = temp;
+      elHum.textContent  = hum;
+
+      /* Tendances */
+      setTrend(elTrendT, prevTemp, temp);
+      setTrend(elTrendH, prevHum,  hum);
+      prevTemp = temp;
+      prevHum  = hum;
+
+      /* Compteur */
+      elCount.textContent = ++count;
+
+      /* Statut */
+      elStatus.textContent = 'Live — Dernière mise à jour : ' + new Date().toLocaleTimeString('fr-FR');
+      elDot.style.backgroundColor = '#2ecc71';
+
+      /* Graphique — 20 points max */
+      labels.push(new Date().toLocaleTimeString('fr-FR'));
+      tempData.push(temp);
+      humData.push(hum);
+      if (labels.length > 20) { labels.shift(); tempData.shift(); humData.shift(); }
+      chart.update();
+    },
+    (error) => {
+      elStatus.textContent = 'Erreur de connexion : ' + error.message;
+      elDot.style.backgroundColor = '#e74c3c';
+    });
+
+  </script>
+
+</body>
+</html>
