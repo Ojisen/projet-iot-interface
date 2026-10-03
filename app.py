@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import subprocess
 from flask import Flask, send_from_directory
@@ -28,7 +27,6 @@ if __name__ == '__main__':
     
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
-=======
 import os
 import subprocess
 from flask import Flask, send_from_directory
@@ -58,4 +56,3 @@ if __name__ == '__main__':
     
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
->>>>>>> 0908d45 (.)
