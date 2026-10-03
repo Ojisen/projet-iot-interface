@@ -1,6 +1,5 @@
 """
 =============================================================
-
 STRUCTURE Firebase créée :
   /
   ├── temperature : 37
@@ -21,7 +20,7 @@ from firebase_admin import credentials, db
 # 1. CONFIGURATION — 
 # ─────────────────────────────────────────────
 
-# Chemin vers  fichier serviceAccountKey.json
+# Chemin vers fichier serviceAccountKey.json (utilisé en local)
 SERVICE_ACCOUNT_KEY = "serviceAccountKey.json"
 
 # URL de Realtime Database
@@ -38,16 +37,30 @@ DELAY_SECONDES = 5
 # ─────────────────────────────────────────────
 
 def init_firebase():
-    """Initialise la connexion Firebase avec le compte de service."""
+    """Initialise la connexion Firebase de manière sécurisée (Fichier ou Variable d'environnement)."""
+    # 1. Vérification si la clé est présente dans la variable d'environnement (Production - Render)
+    firebase_config_env = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
+    
+    if firebase_config_env:
+        try:
+            # Charge les identifiants directement depuis la chaîne JSON masquée
+            config_dict = json.loads(firebase_config_env)
+            cred = credentials.Certificate(config_dict)
+            firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
+            print("[OK] Connecté à Firebase en production via Variable d'Environnement.")
+            return
+        except Exception as e:
+            print(f"[ERREUR] Échec du chargement de la variable d'environnement : {e}")
+            exit(1)
+
+    # 2. Secours en local : utilisation du fichier physique serviceAccountKey.json
     if not os.path.exists(SERVICE_ACCOUNT_KEY):
-        print(f"[ERREUR] Fichier '{SERVICE_ACCOUNT_KEY}' introuvable.")
-        print("  → Téléchargez-le depuis Firebase Console :")
-        print("     Paramètres du projet > Comptes de service > Générer une nouvelle clé privée")
+        print(f"[ERREUR] Clé introuvable. Configurez la variable d'environnement sur Render ou ajoutez le fichier '{SERVICE_ACCOUNT_KEY}' localement.")
         exit(1)
 
     cred = credentials.Certificate(SERVICE_ACCOUNT_KEY)
     firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
-    print("[OK] Connecté à Firebase :", DATABASE_URL)
+    print("[OK] Connecté à Firebase en local via le fichier JSON.")
 
 # ─────────────────────────────────────────────
 # 3. LECTURE DU FICHIER JSON
@@ -107,19 +120,18 @@ def main():
     init_firebase()
     mesures = lire_json(DATA_FILE)
 
-    print(f"\n[START] Envoi en boucle de {len(mesures)} mesures "
-          f"(intervalle : {DELAY_SECONDES}s)\n")
+    print(f"\n[START] Envoi en boucle de {len(mesures)} mesures (intervalle : {DELAY_SECONDES}s)\n")
 
-    # La boucle infinie doit englober l'envoi des mesures
+    # La boucle infinie englobe le parcours complet de la liste des mesures
     while True:
         for i, mesure in enumerate(mesures, 1):
             print(f"[{i}/{len(mesures)}]", end=" ")
             envoyer_mesure(mesure)
 
-            # Pause entre chaque mesure
+            # Pause entre chaque envoi de mesure
             time.sleep(DELAY_SECONDES)
         
-        print("\n[REBOUT] Fin de la liste, redémarrage de la boucle...\n")
+        print("\n[REBOUT] Fin de la liste de données. Redémarrage de la boucle...\n")
 
 if __name__ == "__main__":
     main()
