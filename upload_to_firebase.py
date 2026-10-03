@@ -21,7 +21,7 @@ from firebase_admin import credentials, db
 # ─────────────────────────────────────────────
 
 # Chemin vers fichier serviceAccountKey.json (utilisé en local)
-SERVICE_ACCOUNT_KEY = "serviceAccountKey.json"
+SERVICE_ACCOUNT_KEY = "serviceAccountKey_firebase.json"
 
 # URL de Realtime Database
 DATABASE_URL = "https://projet-iot-a9c26-default-rtdb.firebaseio.com/"
