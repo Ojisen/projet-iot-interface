@@ -20,8 +20,9 @@ from firebase_admin import credentials, db
 # 1. CONFIGURATION — 
 # ─────────────────────────────────────────────
 
-# Chemin vers fichier serviceAccountKey.json (utilisé en local)
+# Chemin vers le fichier serviceAccountKey.json (uniquement pour le local)
 SERVICE_ACCOUNT_KEY = "serviceAccountKey_firebase.json"
+
 
 # URL de Realtime Database
 DATABASE_URL = "https://projet-iot-a9c26-default-rtdb.firebaseio.com/"
@@ -37,13 +38,12 @@ DELAY_SECONDES = 5
 # ─────────────────────────────────────────────
 
 def init_firebase():
-    """Initialise la connexion Firebase de manière sécurisée (Fichier ou Variable d'environnement)."""
-    # 1. Vérification si la clé est présente dans la variable d'environnement (Production - Render)
+    """Initialise la connexion Firebase de manière sécurisée (Production ou Local)."""
+    # 1. Vérification si la clé est stockée dans la variable d'environnement de Render
     firebase_config_env = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
     
     if firebase_config_env:
         try:
-            # Charge les identifiants directement depuis la chaîne JSON masquée
             config_dict = json.loads(firebase_config_env)
             cred = credentials.Certificate(config_dict)
             firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
@@ -55,7 +55,8 @@ def init_firebase():
 
     # 2. Secours en local : utilisation du fichier physique serviceAccountKey.json
     if not os.path.exists(SERVICE_ACCOUNT_KEY):
-        print(f"[ERREUR] Clé introuvable. Configurez la variable d'environnement sur Render ou ajoutez le fichier '{SERVICE_ACCOUNT_KEY}' localement.")
+        print(f"[ERREUR] Fichier '{SERVICE_ACCOUNT_KEY}' introuvable.")
+        print("  → Configurez la variable d'environnement sur Render ou ajoutez le fichier localement.")
         exit(1)
 
     cred = credentials.Certificate(SERVICE_ACCOUNT_KEY)
@@ -120,18 +121,19 @@ def main():
     init_firebase()
     mesures = lire_json(DATA_FILE)
 
-    print(f"\n[START] Envoi en boucle de {len(mesures)} mesures (intervalle : {DELAY_SECONDES}s)\n")
+    print(f"\n[START] Envoi en boucle infinie de {len(mesures)} mesures (intervalle : {DELAY_SECONDES}s)\n")
 
-    # La boucle infinie englobe le parcours complet de la liste des mesures
+    # La boucle principale doit tourner indéfiniment
     while True:
         for i, mesure in enumerate(mesures, 1):
             print(f"[{i}/{len(mesures)}]", end=" ")
             envoyer_mesure(mesure)
 
-            # Pause entre chaque envoi de mesure
+            # Pause obligatoire entre chaque envoi
             time.sleep(DELAY_SECONDES)
         
-        print("\n[REBOUT] Fin de la liste de données. Redémarrage de la boucle...\n")
+        print("\n[REBOUT] Fin de la liste de données. Redémarrage du cycle de simulation...\n")
 
+# ─────────────────────────────────────────────
 if __name__ == "__main__":
     main()
