@@ -39,30 +39,37 @@ DELAY_SECONDES = 5
 
 def init_firebase():
     """Initialise la connexion Firebase de manière sécurisée (Production ou Local)."""
-    # 1. Vérification si la clé est stockée dans la variable d'environnement de Render
+    # 1. Vérification de la variable d'environnement (Production - Render)
     firebase_config_env = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
     
     if firebase_config_env:
         try:
+            # Force la réparation des caractères d'échappement \n détruits par Render
+            if "\\n" in firebase_config_env:
+                firebase_config_env = firebase_config_env.replace("\\n", "\n")
+                
             config_dict = json.loads(firebase_config_env)
+            
+            # Réparation explicite du champ private_key si nécessaire
+            if "private_key" in config_dict and "\\n" in config_dict["private_key"]:
+                config_dict["private_key"] = config_dict["private_key"].replace("\\n", "\n")
+                
             cred = credentials.Certificate(config_dict)
             firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
-            print("[OK] Connecté à Firebase en production via Variable d'Environnement.")
+            print("[OK] Connecté à Firebase en production via Variable d'Environnement réparée.")
             return
         except Exception as e:
             print(f"[ERREUR] Échec du chargement de la variable d'environnement : {e}")
             exit(1)
 
-    # 2. Secours en local : utilisation du fichier physique serviceAccountKey.json
+    # 2. Secours en local : utilisation du fichier physique
     if not os.path.exists(SERVICE_ACCOUNT_KEY):
         print(f"[ERREUR] Fichier '{SERVICE_ACCOUNT_KEY}' introuvable.")
-        print("  → Configurez la variable d'environnement sur Render ou ajoutez le fichier localement.")
         exit(1)
 
     cred = credentials.Certificate(SERVICE_ACCOUNT_KEY)
     firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
     print("[OK] Connecté à Firebase en local via le fichier JSON.")
-
 # ─────────────────────────────────────────────
 # 3. LECTURE DU FICHIER JSON
 # ─────────────────────────────────────────────
