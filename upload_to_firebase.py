@@ -37,32 +37,37 @@ DELAY_SECONDES = 5
 # 2. INITIALISATION FIREBASE
 # ─────────────────────────────────────────────
 
+import base64  # <--- Assurez-vous d'avoir cet import tout en haut du fichier avec les autres
+
 def init_firebase():
     """Initialise la connexion Firebase de manière sécurisée (Production ou Local)."""
-    # 1. Vérification de la variable d'environnement (Production - Render)
     firebase_config_env = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
     
     if firebase_config_env:
         try:
-            # Force la réparation des caractères d'échappement \n détruits par Render
-            if "\\n" in firebase_config_env:
-                firebase_config_env = firebase_config_env.replace("\\n", "\n")
-                
-            config_dict = json.loads(firebase_config_env)
+            # 1. On tente de lire le Base64 de manière sécurisée
+            try:
+                # Décodage de la chaîne Base64 reçue de Render
+                decoded_bytes = base64.b64decode(firebase_config_env.encode('utf-8'))
+                decoded_str = decoded_bytes.decode('utf-8')
+                config_dict = json.loads(decoded_str)
+            except Exception:
+                # Si ce n'est pas du Base64, on tente une lecture JSON directe (secours)
+                config_dict = json.loads(firebase_config_env)
             
-            # Réparation explicite du champ private_key si nécessaire
+            # Réparation de sécurité au cas où des \n traînent encore
             if "private_key" in config_dict and "\\n" in config_dict["private_key"]:
                 config_dict["private_key"] = config_dict["private_key"].replace("\\n", "\n")
                 
             cred = credentials.Certificate(config_dict)
             firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
-            print("[OK] Connecté à Firebase en production via Variable d'Environnement réparée.")
+            print("[OK] Connecté à Firebase en production via Variable Base64 décodée.")
             return
         except Exception as e:
             print(f"[ERREUR] Échec du chargement de la variable d'environnement : {e}")
             exit(1)
 
-    # 2. Secours en local : utilisation du fichier physique
+    # 2. Secours en local
     if not os.path.exists(SERVICE_ACCOUNT_KEY):
         print(f"[ERREUR] Fichier '{SERVICE_ACCOUNT_KEY}' introuvable.")
         exit(1)
@@ -70,6 +75,7 @@ def init_firebase():
     cred = credentials.Certificate(SERVICE_ACCOUNT_KEY)
     firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
     print("[OK] Connecté à Firebase en local via le fichier JSON.")
+
 # ─────────────────────────────────────────────
 # 3. LECTURE DU FICHIER JSON
 # ─────────────────────────────────────────────
