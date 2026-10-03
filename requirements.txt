@@ -1,6 +1,2 @@
-<<<<<<< HEAD
 flask
-=======
-flask
->>>>>>> 0908d45 (.)
 firebase-admin
